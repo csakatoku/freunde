@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import oauth2 as oauth
+
 from django.test import TestCase
+from django.utils import simplejson as json
 
 signiture_method = oauth.SignatureMethod_HMAC_SHA1()
 consumer = oauth.Consumer('key', 'secret')
@@ -54,3 +56,40 @@ class SimpleTest(TestCase):
         headers = self.get_headers(path, 'GET', params)
         res = self.client.get(path, params, **headers)
         self.failUnlessEqual(res.status_code, 400)
+
+    def test_people_friends(self):
+        """
+        Tests /people/1/@friends
+        """
+        path = '/people/1/@friends'
+        params = { 'xoauth_requestor_id': 1 }
+
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 200)
+
+        data = json.loads(res.content)
+        self.assertEquals(data.get('totalResults'), 239)
+        self.assertEquals(data.get('startIndex'), 0)
+        self.assertEquals(data.get('itemPerPage'), 50)
+
+        seq = []
+        for x in xrange(0, 5):
+            index = x * 10
+            params = { 'xoauth_requestor_id': 1,
+                       'count'              : 10,
+                       'startIndex'         : index,
+                       }
+            headers = self.get_headers(path, 'GET', params)
+            res = self.client.get(path, params, **headers)
+            self.assertEquals(res.status_code, 200)
+
+            tmp = json.loads(res.content)
+            self.assertEquals(tmp.get('totalResults'), 239)
+            self.assertEquals(tmp.get('startIndex'), index)
+            self.assertEquals(tmp.get('itemPerPage'), 10)
+
+            seq.extend(tmp.get('entry', []))
+
+        self.assertEquals([x['id'] for x in data.get('entry', [])],
+                          [x['id'] for x in seq])

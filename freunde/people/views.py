@@ -10,8 +10,9 @@ from django.utils import simplejson as json
 from django.shortcuts import get_object_or_404
 
 from freunde.people.models import *
+from freunde.people.forms import OpenSearchForm
 
-CONTENT_TYPE = 'text/json'
+CONTENT_TYPE = 'text/json; charset=UTF-8'
 
 class OAuthRequest(oauth.Request):
     @staticmethod
@@ -101,27 +102,39 @@ def people_self(req, guid):
              "startIndex"  : 0,
              "totalResults": 1,
              }
-    content = json.dumps(data, indent=2)
+    content = json.dumps(data, indent=2, ensure_ascii=False)
     return HttpResponse(content, content_type=CONTENT_TYPE)
 
 @oauth_required
 def people_friends(req, guid):
     person = get_object_or_404(Person, pk=guid)
 
+    params = { 'count'     : 50,
+               'startIndex': 0,
+               }
+    for key in req.GET:
+        for value in req.GET.getlist(key):
+            params[key] = value
+
+    form = OpenSearchForm(params)
+    if not form.is_valid():
+        return HttpResponseBadRequest(str(form.errors))
+
     total = person.friends.count()
-    per_page = 50
+    per_page = form.cleaned_data['count']
+    start = form.cleaned_data['startIndex']
 
     entry = []
-    for friend in person.friends.all():
+    for friend in person.friends.all()[start:start + per_page]:
         entry.append({ 'id'          : friend.id,
                        'nickname'    : friend.nickname,
                        'displayName' : friend.nickname,
                        })
 
     data = { "entry"        : entry,
-             "startIndex"   : 0,
+             "startIndex"   : start,
              "itemPerPage"  : per_page,
              "totalResults" : total,
              }
-    content = json.dumps(data, indent=2)
+    content = json.dumps(data, indent=2, ensure_ascii=False)
     return HttpResponse(content, content_type=CONTENT_TYPE)
