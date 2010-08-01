@@ -37,6 +37,46 @@ class SimpleTest(TestCase):
         res = self.client.get(path, params, **headers)
         self.failUnlessEqual(res.status_code, 200)
 
+        data = json.loads(res.content)
+        self.assertEqual(data['entry']['isOwner'], False)
+        self.assertEqual(data['entry']['isViewer'], False)
+
+    def test_people_self_with_xoauth_requestor_id(self):
+        """
+        Tests people_self
+        """
+        params = { 'xoauth_requestor_id': 1 }
+        path = '/people/1/@self'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.failUnlessEqual(res.status_code, 200)
+
+        data = json.loads(res.content)
+        self.assertEqual(data['entry']['isOwner'], True)
+        self.assertEqual(data['entry']['isViewer'], True)
+
+        # invalid xoauth_requestor_id
+        params = { 'xoauth_requestor_id': 0 }
+        path = '/people/1/@self'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.failUnlessEqual(res.status_code, 200)
+
+        data = json.loads(res.content)
+        self.assertEqual(data['entry']['isOwner'], False)
+        self.assertEqual(data['entry']['isViewer'], False)
+
+        # Getting another's page
+        params = { 'xoauth_requestor_id': 1 }
+        path = '/people/3/@self'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.failUnlessEqual(res.status_code, 200)
+
+        data = json.loads(res.content)
+        self.assertEqual(data['entry']['isOwner'], False)
+        self.assertEqual(data['entry']['isViewer'], False)
+
     def test_people_self_has_app(self):
         """
         Tests people_self
@@ -65,6 +105,10 @@ class SimpleTest(TestCase):
         headers = self.get_headers(path, 'GET', params)
         res = self.client.get(path, params, **headers)
         self.failUnlessEqual(res.status_code, 200)
+
+        data = json.loads(res.content)
+        self.assertEqual(data['entry']['isOwner'], True)
+        self.assertEqual(data['entry']['isViewer'], True)
 
     def test_people_me_self_without_xoauth_requestor_id(self):
         """

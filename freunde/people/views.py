@@ -76,27 +76,40 @@ def oauth_required(func):
 
     return functools.wraps(func)(inner)
 
+def get_viewer(req):
+    viewer_id = req.GET.get('xoauth_requestor_id')
+    if viewer_id is None:
+        return NullPerson()
+
+    try:
+        return Person.objects.get(pk=viewer_id)
+    except Person.DoesNotExist:
+        return NullPerson()
+
 @oauth_required
 def people_me_self(req):
-    guid = req.GET.get('xoauth_requestor_id')
-    if not guid:
+    viewer = get_viewer(req)
+    if not viewer.id:
         return HttpResponseBadRequest('xoauth_requestor_id required')
-    return people_self(req, guid)
+    return people_self(req, viewer.id)
 
 @oauth_required
 def people_me_friends(req):
-    guid = req.GET.get('xoauth_requestor_id')
-    if not guid:
+    viewer = get_viewer(req)
+    if not viewer.id:
         return HttpResponseBadRequest('xoauth_requestor_id required')
-    return people_friends(req, guid)
+    return people_friends(req, viewer.id)
 
 @oauth_required
-def people_self(req, guid):
-    person = get_object_or_404(Person, pk=guid)
-    entry = { 'id'          : person.id,
-              'nickname'    : person.nickname,
-              'displayName' : person.nickname,
-              'hasApp'      : req.app in person.apps.all(),
+def people_self(req, owner_id):
+    viewer = get_viewer(req)
+    owner = get_object_or_404(Person, pk=owner_id)
+    entry = { 'id'          : owner.id,
+              'nickname'    : owner.nickname,
+              'displayName' : owner.nickname,
+              'hasApp'      : req.app in owner.apps.all(),
+              'isOwner'     : owner.id == viewer.id,
+              'isViewer'    : owner.id == viewer.id,
               }
 
     data = { "entry"       : entry,
@@ -107,8 +120,9 @@ def people_self(req, guid):
     return HttpResponse(content, content_type=CONTENT_TYPE)
 
 @oauth_required
-def people_friends(req, guid):
-    person = get_object_or_404(Person, pk=guid)
+def people_friends(req, owner_id):
+    viewer = get_viewer(req)
+    owner = get_object_or_404(Person, pk=owner_id)
 
     params = { 'count'     : 50,
                'startIndex': 0,
@@ -121,15 +135,15 @@ def people_friends(req, guid):
     if not form.is_valid():
         return HttpResponseBadRequest(str(form.errors))
 
-    total = person.friends.count()
+    total = owner.friends.count()
     per_page = form.cleaned_data['count']
     start = form.cleaned_data['startIndex']
     filter_by = form.cleaned_data.get('filterBy')
 
     if filter_by == 'hasApp':
-        query = person.friends.filter(apps__id=req.app.id)
+        query = owner.friends.filter(apps__id=req.app.id)
     else:
-        query = person.friends.all()
+        query = owner.friends.all()
 
     entry = []
     for friend in query[start:start + per_page]:
@@ -137,6 +151,8 @@ def people_friends(req, guid):
                        'nickname'    : friend.nickname,
                        'displayName' : friend.nickname,
                        'hasApp'      : req.app in friend.apps.all(),
+                       'isOwner'     : friend.id == owner.id,
+                       'isViewer'    : friend.id == viewer.id,
                        })
 
     data = { "entry"        : entry,
