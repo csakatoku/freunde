@@ -3,7 +3,7 @@ from django.db import models
 
 class Application(models.Model):
     name            = models.CharField(max_length=50)
-    consumer_key    = models.CharField(max_length=250)
+    consumer_key    = models.CharField(max_length=250, unique=True)
     consumer_secret = models.CharField(max_length=250)
 
     def __unicode__(self):
@@ -21,3 +21,4 @@ class Person(models.Model):
 
     def __unicode__(self):
         return self.nickname
+

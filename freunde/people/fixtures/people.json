@@ -1,0 +1,25 @@
+[
+  {
+    "pk": 1, 
+    "model": "people.application", 
+    "fields": {
+      "consumer_secret": "secret", 
+      "consumer_key": "key", 
+      "name": "test"
+    }
+  }, 
+  {
+    "pk": 1, 
+    "model": "people.person", 
+    "fields": {
+      "apps": [], 
+      "gender": "M", 
+      "friends": [], 
+      "birthday": "1978-01-01", 
+      "user_hash": "", 
+      "address": "", 
+      "nickname": "test", 
+      "blood_type": "B"
+    }
+  }
+]

@@ -1,4 +1,4 @@
 *.pyc
 *~
 freunde.db
-
+local_settings.py
