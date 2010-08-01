@@ -96,6 +96,7 @@ def people_self(req, guid):
     entry = { 'id'          : person.id,
               'nickname'    : person.nickname,
               'displayName' : person.nickname,
+              'hasApp'      : req.app in person.apps.all(),
               }
 
     data = { "entry"       : entry,
@@ -123,12 +124,19 @@ def people_friends(req, guid):
     total = person.friends.count()
     per_page = form.cleaned_data['count']
     start = form.cleaned_data['startIndex']
+    filter_by = form.cleaned_data.get('filterBy')
+
+    if filter_by == 'hasApp':
+        query = person.friends.filter(apps__id=req.app.id)
+    else:
+        query = person.friends.all()
 
     entry = []
-    for friend in person.friends.all()[start:start + per_page]:
+    for friend in query[start:start + per_page]:
         entry.append({ 'id'          : friend.id,
                        'nickname'    : friend.nickname,
                        'displayName' : friend.nickname,
+                       'hasApp'      : req.app in friend.apps.all(),
                        })
 
     data = { "entry"        : entry,

@@ -37,6 +37,25 @@ class SimpleTest(TestCase):
         res = self.client.get(path, params, **headers)
         self.failUnlessEqual(res.status_code, 200)
 
+    def test_people_self_has_app(self):
+        """
+        Tests people_self
+        """
+        params = {}
+        path = '/people/1/@self'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.failUnlessEqual(res.status_code, 200)
+        data = json.loads(res.content)
+        self.assertEquals(data['entry']['hasApp'], True)
+
+        path = '/people/2/@self'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.failUnlessEqual(res.status_code, 200)
+        data = json.loads(res.content)
+        self.assertEquals(data['entry']['hasApp'], False)
+
     def test_people_me_self(self):
         """
         Tests /people/@me/@self
@@ -56,6 +75,46 @@ class SimpleTest(TestCase):
         headers = self.get_headers(path, 'GET', params)
         res = self.client.get(path, params, **headers)
         self.failUnlessEqual(res.status_code, 400)
+
+    def test_people_friends_filter_by_error(self):
+        """
+        Tests /people/1/@friends, but filterBy value is invalid
+        """
+        path = '/people/1/@friends'
+        params = { 'xoauth_requestor_id': 1,
+                   'filterBy': 'spam',
+                   }
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 400)
+
+    def test_people_friends_filter_by_has_app(self):
+        """
+        Tests /people/1/@friends filtered by hasApp
+        """
+        path = '/people/1/@friends'
+
+        params = { 'xoauth_requestor_id': 1,
+                   'filterBy'           : 'hasApp',
+                   'count'              : 500,
+                   }
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 200)
+
+        data1 = json.loads(res.content)
+        self.assertEqual(all([x['hasApp'] for x in data1.get('entry')]), True)
+
+        params = { 'xoauth_requestor_id': 1,
+                   'count'              : 500,
+                   }
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 200)
+
+        data2 = json.loads(res.content)
+        self.assertEqual([x['id'] for x in data1.get('entry') if x['hasApp']],
+                         [x['id'] for x in data2.get('entry') if x['hasApp']])
 
     def test_people_friends(self):
         """
