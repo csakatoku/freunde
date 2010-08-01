@@ -162,3 +162,37 @@ def people_friends(req, owner_id):
              }
     content = json.dumps(data, indent=2, ensure_ascii=False)
     return HttpResponse(content, content_type=CONTENT_TYPE)
+
+
+@oauth_required
+def people_me_single_friend(req, friend_id):
+    viewer = get_viewer(req)
+    if not viewer.id:
+        return HttpResponseBadRequest('xoauth_requestor_id required')
+    return people_single_friend(req, viewer.id, friend_id)
+
+@oauth_required
+def people_single_friend(req, owner_id, friend_id):
+    viewer = get_viewer(req)
+    owner = get_object_or_404(Person, pk=owner_id)
+
+    try:
+        friend = owner.friends.get(pk=friend_id)
+    except Person.DoesNotExist:
+        raise Http404
+
+    entry = [{ 'id'          : friend.id,
+               'nickname'    : friend.nickname,
+               'displayName' : friend.nickname,
+               'hasApp'      : req.app in friend.apps.all(),
+               'isOwner'     : friend.id == owner.id,
+               'isViewer'    : friend.id == viewer.id,
+               }]
+
+    data = { "entry"        : entry,
+             "startIndex"   : 0,
+             "itemPerPage"  : 1,
+             "totalResults" : 1,
+             }
+    content = json.dumps(data, indent=2, ensure_ascii=False)
+    return HttpResponse(content, content_type=CONTENT_TYPE)

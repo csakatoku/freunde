@@ -12,5 +12,6 @@ urlpatterns = patterns(
     (r'(?P<owner_id>[^/]+)/@friends$', 'people_friends'),
     (r'(?P<owner_id>[^/]+)/@all$', 'people_friends'),
 
-    #(r'(?P<guid>[^/]+)/@friends/(?P<friend_guid>[^/]+)', ''),
+    (r'@me/@friends/(?P<friend_id>[^/]+)$', 'people_me_single_friend'),
+    (r'(?P<owner_id>[^/]+)/@friends/(?P<friend_id>[^/]+)$', 'people_single_friend'),
 )

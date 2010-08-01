@@ -196,3 +196,36 @@ class SimpleTest(TestCase):
 
         self.assertEquals([x['id'] for x in data.get('entry', [])],
                           [x['id'] for x in seq])
+
+    def test_people_friend_404(self):
+        """
+        Tests /people/240/@friends/1
+        """
+        params = { 'xoauth_requestor_id': 240 }
+
+        path = '/people/240/@friends/1'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 404)
+
+        path = '/people/@me/@friends/1'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 404)
+
+    def test_people_single_friend(self):
+        """
+        Tests /people/1/@friends/2
+        """
+        params = { 'xoauth_requestor_id': 1 }
+
+        path = '/people/1/@friends/2'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 200)
+
+        path = '/people/@me/@friends/2'
+        headers = self.get_headers(path, 'GET', params)
+        res = self.client.get(path, params, **headers)
+        self.assertEquals(res.status_code, 200)
+
